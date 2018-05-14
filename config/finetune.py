@@ -95,7 +95,7 @@ learning_rate_multipliers = {
 }
 
 # The model folder from which to retore the parameters
-restore_model = './pretrained/faceres_ms'
+restore_model = '/path/to/the/pretrained/model/folder'
 
 # Keywords to filter restore variables, set None for all
 restore_scopes = ['FaceResNet']

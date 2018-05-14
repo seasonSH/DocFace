@@ -52,7 +52,7 @@ def main(args):
     if config.restore_model:
         network.restore_model(config.restore_model, config.restore_scopes)
 
-    # Set up LFW test protocol and load images
+    # Set up test protocol and load images
     print('Loading images...')
     testset.separate_template_and_probes()
     testset.images = utils.preprocess(testset.images, config, is_training=False)

@@ -2,6 +2,7 @@
 
 By Yichun Shi and Anil K. Jain
 
+![DocFace](https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/docface.png)
 
 ### Contents
 0. [Introduction](#introduction)
@@ -111,7 +112,7 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 	...
 	
 	# The model folder from which to retore the parameters
-    restore_model = 'path/to/the/pretrained/model/folder'
+    restore_model = '/path/to/the/pretrained/model/folder'
 	```
 
 2. Run the following command in the terminal:
@@ -128,10 +129,11 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 
 
 ### Results
-- Using our pre-trained base model, one should be able to achieve 99.67% on the standard LFW verificatio protocol and 99.65% on the 99.60% on the [BLUFR](http://www.cbsr.ia.ac.cn/users/scliao/projects/blufr/) protocol. Similar results should be achieved by using our code to train the Face-ResNet on MsCelebV1.
+- Using our pre-trained base model, one should be able to achieve 99.67% on the standard LFW verificatio protocol and 99.60% on the [BLUFR](http://www.cbsr.ia.ac.cn/users/scliao/projects/blufr/) protocol. Similar results should be achieved by using our code to train the Face-ResNet on MsCelebV1.
 
 - Using our private dataset, we see a significant improvement of performance on the ID-Selfie matching problem:
-
+    ![Table1](https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/table1.png)
+    ![Table2](https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/table1.png)
 
 ### Contact
 
