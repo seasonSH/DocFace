@@ -4,7 +4,7 @@ By Yichun Shi and Anil K. Jain
 
 <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/docface.png" width="600px">
 
-### Contents
+## Contents
 0. [Introduction](#introduction)
 0. [Citation](#citation)
 0. [Requirements](#requirements)
@@ -13,31 +13,31 @@ By Yichun Shi and Anil K. Jain
 0. [Results](#results)
 
 
-### Introduction
+## Introduction
 
 This repository includes the tensorflow implementation of **DocFace**, which is a system proposed for matching ID photos and live face photos. DocFace is shown to siginificantly outperformn general face matchers on the ID-Selfie matching problem. We here give the example training code and pre-trained models in the paper. For the preprocessing part, we follow the repository of [SphereFace](http://openaccess.thecvf.com/content_cvpr_2017/papers/Liu_SphereFace_Deep_Hypersphere_CVPR_2017_paper.pdf) to align the face images using [MTCNN](https://github.com/kpzhang93/MTCNN_face_detection_alignment). The user can also use other methods for face alignment. Because the dataset used in the paper is private, we cannot publish it here. One can test the system on their own dataset.
 
 
-### Citation
+## Citation
 
 If you find **DocFace** helpful to your research, please cite:
 
-	@InProceedings{shi_2018_docface,
+	@article{shi2018docface,
 	  title = {DocFace: Matching ID Document Photos to Selfies},
 	  author = {Shi, Yichun and Jain, Anil K.},
 	  booktitle = {arXiv:1805.02283},
 	  year = {2018}
 	}
 
-### Requirements
+## Requirements
 1. Requirements for `Python3`
 2. Requirements for `Tensorflow 1.2r` or newer versions.
 3. Run `pip install -r requirements.txt` for other dependencies.
 
-### Usage
+## Usage
 
-#### Part 1: Preprocessing
-##### 1.1 Dataset Structure
+### Part 1: Preprocessing
+#### 1.1 Dataset Structure
 Download the [Ms-Celeb-1M](https://www.msceleb.org/download/cropped) and [LFW](http://vis-www.cs.umass.edu/lfw/lfw.tgz) dataset for training and testing the base model. Other dataset such as CASIA-Webface can also be used for training. Because Ms-Celeb-1M is known to be a very noisy dataset, we use the [clean list](https://github.com/AlfredXiangWu/face_verification_experiment) provided by Wu et al. Arrange Ms-Celeb-1M dataset and LFW dataset as the following structure, where each subfolder represents a subject:
 
     Aaron_Eckhart
@@ -64,13 +64,13 @@ For the ID-Selfie dataset, make sure each folder has only two images and is in s
     ...
 Here "1.jpg" are the ID photos and "2.jpg" are the selfies.
 
-##### 1.2 Face Alignment
+#### 1.2 Face Alignment
 We align all the face images following the [SphereFace](http://openaccess.thecvf.com/content_cvpr_2017/papers/Liu_SphereFace_Deep_Hypersphere_CVPR_2017_paper.pdf). The user is recommended to use their code for face alignment. It is okay to use other face alignment methods, but make sure all the images are resized to 96 x 112. Users can also use an input size of 112 x 112 by changing the "image_size" in the configuration files.
 
-#### Part 2: Training
+### Part 2: Training
 **Note:** In this part, we assume you are in the directory **`$DOCFACE_ROOT/`**
 
-##### 2.1 Training the base model
+#### 2.1 Training the base model
 
 1. Set up the dataset paths in `config/basemodel.py`:
 
@@ -98,7 +98,7 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 	```
     After training, a model folder will appear under`log/faceres/`. We will use it for fine-tuning. If the training code is run more than once, multiple folders will appear with time stamps as their names.
     
-##### 2.2 Fine-tuning on the ID-Selfie datasets
+#### 2.2 Fine-tuning on the ID-Selfie datasets
 
 1. Set up the dataset paths and the pre-trained model path in `config/finetune.py`
 
@@ -121,7 +121,7 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 	python src/train_sibling.py config/finetune.py
 	```
 
-#### Part 3: Feature Extraction
+### Part 3: Feature Extraction
 **Note:** In this part, we assume you are in the directory **`$DOCFACE_ROOT/`**
 
 To extract features using a pre-trained model (either base network or sibling network), prepare a `.txt` file of image list. Then run the following command in terminal:
@@ -135,14 +135,14 @@ python src/extract_features.py \
 
 Notice that when extracting features using a sibling network, we assume that the images are in the order of template, selfie, template, selfie ... One needs to change the code for other cases.
 
-### Models
+## Models
 
 - BaseModel: [Google Drive](https://drive.google.com/file/d/1YIZXsvtxQ4HkwGUDqq3bSwZVIv9e338R/view?usp=sharing)
 
 - Fine-tuned DocFace model: [Google Drive](https://drive.google.com/file/d/1GJHjapZo8HcQ6aKEpSOZeAJCd9uaO5j1/view?usp=sharing)
 
 
-### Results
+## Results
 - Using our pre-trained base model, one should be able to achieve 99.67% on the standard LFW verification protocol and 99.60% on the [BLUFR](http://www.cbsr.ia.ac.cn/users/scliao/projects/blufr/) protocol. Similar results should be achieved by using our code to train the Face-ResNet on Ms-Celeb-1M.
 
 - Using our private dataset, we see a significant improvement of performance on the ID-Selfie matching problem:
@@ -153,6 +153,6 @@ Notice that when extracting features using a sibling network, we assume that the
     <br>
     <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/table2.png" width="500px">
 
-### Contact
+## Contact
 
   Yichun Shi: shiyichu **at** msu **dot** edu

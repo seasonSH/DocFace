@@ -31,41 +31,12 @@ from __future__ import print_function
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
-batch_norm_params = {
-    # Decay for the moving averages.
-    'decay': 0.995,
-    # epsilon to prevent 0s in variance.
-    'epsilon': 0.001,
-    # force in-place updates of mean and variance estimates
-    'updates_collections': None,
-    # Moving averages ends up in the trainable variables collection
-    'variables_collections': [ tf.GraphKeys.TRAINABLE_VARIABLES ],
-}
-
-batch_norm_params_last = {
-    # Decay for the moving averages.
-    'decay': 0.995,
-    # epsilon to prevent 0s in variance.
-    'epsilon': 10e-8,
-    # force in-place updates of mean and variance estimates
-    'center': False,
-    # not use beta
-    'scale': False,
-    # not use gamma
-    'updates_collections': None,
-    # Moving averages ends up in the trainable variables collection
-    'variables_collections': [ tf.GraphKeys.TRAINABLE_VARIABLES ],
-}
-
 def parametric_relu(x):
     num_channels = x.shape[-1].value
     with tf.variable_scope('PRELU'):
         alpha = tf.get_variable('alpha', (1,1,1,num_channels),
                         initializer=tf.constant_initializer(0.0),
                         dtype=tf.float32)
-        # mask = x>=0
-        # mask_pos = tf.cast(mask, tf.float32)
-        # mask_neg = tf.cast(tf.logical_not(mask), tf.float32)
         return tf.nn.relu(x) + alpha * tf.maximum(0.0, x)
 
 activation = lambda x: tf.keras.layers.PReLU(shared_axes=[1,2]).apply(x)
@@ -102,7 +73,6 @@ def conv_module(net, num_res_layers, num_kernels, reuse = None, scope = None):
                 with tf.variable_scope('layer_%d'%i, reuse=reuse):
                     net = slim.conv2d(net, num_kernels[i], kernel_size=3, stride=1, padding='VALID',
                                     weights_initializer=slim.xavier_initializer())
-                    # net = activation(net)
                     print('| ---- layer_%d' % i)
             net = slim.max_pool2d(net, 2, stride=2, padding='VALID')
         else:
@@ -112,7 +82,6 @@ def conv_module(net, num_res_layers, num_kernels, reuse = None, scope = None):
                     net = slim.conv2d(net, num_kernels[0], kernel_size=3, stride=1, padding='SAME',
                                     weights_initializer=tf.truncated_normal_initializer(stddev=0.01),
                                     biases_initializer=None)
-                    # net = activation(net)
                     print('| ---- layer_%d' % i)
                 if i % 2 == 1:
                     net = se_module(net)
@@ -122,10 +91,8 @@ def conv_module(net, num_res_layers, num_kernels, reuse = None, scope = None):
             # Pooling for conv2 - conv4
             if len(num_kernels) > 1:
                 with tf.variable_scope('expand', reuse=reuse):
-                    # net = slim.batch_norm(net, **batch_norm_params)
                     net = slim.conv2d(net, num_kernels[1], kernel_size=3, stride=1, padding='VALID',
                                     weights_initializer=slim.xavier_initializer())
-                    # net = activation(net)
                     net = slim.max_pool2d(net, 2, stride=2, padding='VALID')
                     print('- expand')
 
@@ -158,27 +125,10 @@ def inference(images, keep_probability, phase_train=True, bottleneck_layer_size=
                 net = conv_module(net, 6, [512], scope='conv5')
                 print('module_5 shape:', [dim.value for dim in net.shape])
                 
-                # net = slim.avg_pool2d(net, net.get_shape()[1:3], scope='avgpool5')
-                # net = tf.squeeze(net, [1, 2])
                 
                 net = slim.flatten(net)
                 net = slim.fully_connected(net, bottleneck_layer_size, scope='Bottleneck',
-                                        # weights_regularizer=None,
-                                        # weights_initializer=tf.truncated_normal_initializer(stddev=0.1),
-                                        # weights_initializer=tf.constant_initializer(0.),
                                         weights_initializer=slim.xavier_initializer(), 
                                         activation_fn=None)
-                # net= slim.batch_norm(net, **batch_norm_params_last)
-                # with tf.variable_scope('Bottleneck', reuse=True):
-                #     weights = tf.get_variable('weights')
-                #     weights_norm = tf.reduce_sum(tf.square(weights),axis=0)
-                #     loss = tf.reduce_sum(weight_decay*tf.log(weights_norm))
-                #     tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, loss)
-                with tf.device(None):
-                    tf.summary.histogram('unormed_prelogits', net)
-                
-                # net = slim.fully_connected(net, bottleneck_layer_size, scope='Bottleneck',
-                #                         activation_fn=None, weights_initializer=slim.xavier_initializer())
-                # net = activation(net)
 
     return net
