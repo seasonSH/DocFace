@@ -133,9 +133,11 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 
 - Using our private dataset, we see a significant improvement of performance on the ID-Selfie matching problem:
     
-    <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/table1.png" width="700px">
-
-    <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/table2.png" width="700px">
+    <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/table1.png" width="500px">
+    <br>
+    <br>
+    <br>
+    <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/table2.png" width="500px">
 
 ### Contact
 
