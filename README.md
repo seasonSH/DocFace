@@ -15,12 +15,12 @@ By Yichun Shi and Anil K. Jain
 
 ## Introduction
 
-This repository includes the tensorflow implementation of **DocFace**, which is a system proposed for matching ID photos and live face photos. DocFace is shown to siginificantly outperformn general face matchers on the ID-Selfie matching problem. We here give the example training code and pre-trained models in the paper. For the preprocessing part, we follow the repository of [SphereFace](http://openaccess.thecvf.com/content_cvpr_2017/papers/Liu_SphereFace_Deep_Hypersphere_CVPR_2017_paper.pdf) to align the face images using [MTCNN](https://github.com/kpzhang93/MTCNN_face_detection_alignment). The user can also use other methods for face alignment. Because the dataset used in the paper is private, we cannot publish it here. One can test the system on their own dataset.
+This repository includes the tensorflow implementation of [**DocFace**](https://arxiv.org/abs/1805.02283), which is a system proposed for matching ID photos and live face photos. DocFace is shown to siginificantly outperformn general face matchers on the ID-Selfie matching problem. We here give the example training code and pre-trained models in the paper. For the preprocessing part, we follow the repository of [SphereFace](http://openaccess.thecvf.com/content_cvpr_2017/papers/Liu_SphereFace_Deep_Hypersphere_CVPR_2017_paper.pdf) to align the face images using [MTCNN](https://github.com/kpzhang93/MTCNN_face_detection_alignment). The user can also use other methods for face alignment. Because the dataset used in the paper is private, we cannot publish it here. One can test the system on their own dataset.
 
 
 ## Citation
 
-If you find **DocFace** helpful to your research, please cite:
+If you find [**DocFace**](https://arxiv.org/abs/1805.02283) helpful to your research, please cite:
 
 	@article{shi2018docface,
 	  title = {DocFace: Matching ID Document Photos to Selfies},
@@ -137,7 +137,7 @@ Notice that when extracting features using a sibling network, we assume that the
 
 ## Models
 
-- BaseModel: [Google Drive](https://drive.google.com/file/d/1YIZXsvtxQ4HkwGUDqq3bSwZVIv9e338R/view?usp=sharing)
+- BaseModel (unconstraind face matching): [Google Drive](https://drive.google.com/file/d/1YIZXsvtxQ4HkwGUDqq3bSwZVIv9e338R/view?usp=sharing)
 
 - Fine-tuned DocFace model: [Google Drive](https://drive.google.com/file/d/1GJHjapZo8HcQ6aKEpSOZeAJCd9uaO5j1/view?usp=sharing)
 
