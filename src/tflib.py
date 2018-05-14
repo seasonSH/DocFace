@@ -1,3 +1,27 @@
+"""Functions for building tensorflow graphs.
+"""
+# MIT License
+# 
+# Copyright (c) 2018 Yichun Shi
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import os
 import numpy as np
 import tensorflow as tf
@@ -175,6 +199,10 @@ def euclidean_distance(X, Y, sqrt=False):
     return diffs
 
 def cosine_softmax(prelogits, label, num_classes, weight_decay, gamma=16.0, reuse=None):
+    ''' Tensorflow implementation of L2-Sofmax, proposed in:
+        R. Ranjan, C. D. Castillo, and R. Chellappa. L2 constrained softmax loss for 
+        discriminativeface veriﬁcation. arXiv:1703.09507, 2017. 
+    '''
     
     nrof_features = prelogits.shape[1].value
     
@@ -211,6 +239,10 @@ def cosine_softmax(prelogits, label, num_classes, weight_decay, gamma=16.0, reus
 
 def angular_softmax(prelogits, label, num_classes, global_step, weight_decay,
             m, lamb_min, lamb_max, reuse=None):
+    ''' Tensorflow implementation of Angular-Sofmax, proposed in:
+        W. Liu, Y. Wen, Z. Yu, M. Li, B. Raj, and L. Song. 
+        Sphereface: Deep hypersphere embedding for face recognition. In CVPR, 2017.
+    '''
     num_features = prelogits.shape[1].value
     batch_size = tf.shape(prelogits)[0]
     lamb_min = lamb_min
@@ -269,6 +301,9 @@ def angular_softmax(prelogits, label, num_classes, global_step, weight_decay,
 
 def am_softmax(prelogits, label, num_classes, 
                 global_step, weight_decay, gamma=16.0, m=1.0, reuse=None):
+    ''' Tensorflow implementation of AM-Sofmax, proposed in:
+        F. Wang, W. Liu, H. Liu, and J. Cheng. Additive margin softmax for face veriﬁcation. arXiv:1801.05599, 2018.
+    '''
     num_features = prelogits.shape[1].value
     batch_size = tf.shape(prelogits)[0]
     with tf.variable_scope('SplitSoftmax', reuse=reuse):
@@ -330,6 +365,9 @@ def am_softmax(prelogits, label, num_classes,
 
 def pair_loss(prelogits, label, num_classes, 
                 global_step, weight_decay, gamma=16.0, m=1.0, reuse=None):
+    ''' Max-margin Pair Score (MPS) loss function proposed in:
+        Y. Shi and A. K. Jain. DocFace: Matching ID Document Photos to Selfies. arXiv:1703.08388, 2017.
+    '''
     nrof_features = prelogits.shape[1].value
     batch_size = tf.shape(prelogits)[0]
     with tf.variable_scope('MaxmarginPairLoss', reuse=reuse):
@@ -390,6 +428,9 @@ def pair_loss(prelogits, label, num_classes,
 
 def pair_loss_sibling(prelogits_tmp, prelogits_pro, label_tmp, label_pro, num_classes, 
                 global_step, weight_decay, gamma=16.0, m=1.0, reuse=None):
+    ''' Max-margin Pair Score (MPS) loss function proposed in:
+        Y. Shi and A. K. Jain. DocFace: Matching ID Document Photos to Selfies. arXiv:1703.08388, 2017.
+    '''
     num_features = prelogits_tmp.shape[1].value
     batch_size = tf.shape(prelogits_tmp)[0] + tf.shape(prelogits_pro)[0]
     with tf.variable_scope('MaxmarginPairLoss', reuse=reuse):

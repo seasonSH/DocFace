@@ -118,7 +118,7 @@ class SiblingNetwork:
                                     cosine_loss = tf.identity(cosine_loss_tmp + cosine_loss_pro, name='cosine_loss')
                                     losses.append(cosine_loss)
                                     insert_dict('closs', cosine_loss)
-                                # Split Loss
+                                # AM-Softmax
                                 if 'am' in config.losses.keys():
                                     split_loss_tmp = tflib.am_softmax(prelogits_tmp, labels_tmp, num_classes, 
                                                             global_step, weight_decay=config.weight_decay,
@@ -129,7 +129,7 @@ class SiblingNetwork:
                                     split_loss = tf.identity(split_loss_tmp + split_loss_pro, name='split_loss')
                                     losses.append(split_loss)
                                     insert_dict('amloss', split_loss)
-                                # Pair Loss
+                                # Max-margin Pairwise Score (MPS)
                                 if 'pair' in config.losses.keys():
                                     pair_loss = tflib.pair_loss_sibling(prelogits_tmp, prelogits_pro, labels_tmp, labels_pro, num_classes, 
                                                             global_step, weight_decay=config.weight_decay,

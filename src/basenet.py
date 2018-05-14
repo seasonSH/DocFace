@@ -113,13 +113,14 @@ class BaseNetwork:
                                                             **config.losses['angular'])  
                                     losses.append(angular_loss)
                                     insert_dict('aloss', angular_loss)
-                                # Split Loss
+                                # AM-Softmax
                                 if 'am' in config.losses.keys():
                                     am_loss = tflib.am_softmax(prelogits, labels, num_classes, 
                                                             global_step, weight_decay=config.weight_decay,
                                                             **config.losses['am'])
                                     losses.append(am_loss)
                                     insert_dict('loss', am_loss)
+                                # Max-margin Pairwise Score (MPS)
                                 if 'pair' in config.losses.keys():
                                     pair_loss = tflib.pair_loss(prelogits, labels, num_classes, 
                                                             global_step, weight_decay=config.weight_decay,
