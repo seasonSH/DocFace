@@ -91,7 +91,7 @@ def main(args):
         print('Testing...')
         switch = utils.zero_one_switch(len(testset.images))
         embeddings = network.extract_feature(testset.images, switch, config.batch_size)
-        tars, fars, _ = utils.test_roc(embeddings, testset.labels, FARs=[1e-4, 1e-3, 1e-2])
+        tars, fars, _ = utils.test_roc(embeddings, FARs=[1e-4, 1e-3, 1e-2])
         with open(os.path.join(log_dir,'result.txt'),'at') as f:
             for i in range(len(tars)):
                 print('[%d] TAR: %2.4f FAR %2.3f' % (epoch+1, tars[i], fars[i]))

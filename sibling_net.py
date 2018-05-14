@@ -222,6 +222,7 @@ class SiblingNetwork:
     def load_model(self, *args, **kwargs):
         tflib.load_model(self.sess, *args, **kwargs)
         self.phase_train_placeholder = self.graph.get_tensor_by_name('phase_train:0')
+        self.keep_prob_placeholder = self.graph.get_tensor_by_name('keep_prob:0')
         self.inputs = self.graph.get_tensor_by_name('inputs:0')
         self.switch = self.graph.get_tensor_by_name('switch:0')
         self.outputs_pro = self.graph.get_tensor_by_name('outputs_pro:0')
@@ -250,6 +251,8 @@ class SiblingNetwork:
             result_temp[~switch_batch,:] = result_tmp
             result_temp[switch_batch,:] = result_pro
             result[start_idx:end_idx] = result_temp
+        if verbose:
+            print('')
         return result
 
         

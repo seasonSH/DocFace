@@ -401,8 +401,8 @@ def get_pairwise_score_label(score_mat, label):
     label_vec = label_mat[triu_indices]
     return score_vec, label_vec
 
-def test_roc(features, labels, FARs):
-    ''' Test the TAR@FAR for pairwise data. the given features and labels 
+def test_roc(features, FARs):
+    ''' Test the TAR@FAR for pairwise data. the given features
     should be in the order of [template, probe, template, probe, ...]'''
 
     n, d = features.shape

@@ -223,6 +223,8 @@ class BaseNetwork:
                         self.phase_train_placeholder: False,
                     self.keep_prob_placeholder: 1.0}
             result[start_idx:end_idx] = self.sess.run(self.outputs, feed_dict=feed_dict)
+        if verbose:
+            print('')
         return result
 
         
