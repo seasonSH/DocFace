@@ -7,7 +7,7 @@ import os
 ####### INPUT OUTPUT #######
 
 # The name of the current model for output
-name = 'faceres_ms_twin_test_1n'
+name = 'faceres_finetuned'
 
 # The folder to save log and model
 log_base_dir = './log/'
@@ -19,7 +19,7 @@ summary_interval = 10
 train_dataset_path = '/path/to/training/dataset/folder'
 
 # Testing dataset path
-train_dataset_path = '/path/to/testing/dataset/folder'
+test_dataset_path = '/path/to/testing/dataset/folder'
 
 # LFW standard protocol file
 lfw_pairs_file = './proto/lfw_pairs.txt'

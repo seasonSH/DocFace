@@ -19,7 +19,7 @@ summary_interval = 100
 train_dataset_path = '/path/to/msceleb1m/dataset/folder'
 
 # Testing dataset path
-train_dataset_path = '/path/to/lfw/dataset/folder'
+test_dataset_path = '/path/to/lfw/dataset/folder'
 
 # LFW standard protocol file
 lfw_pairs_file = './proto/lfw_pairs.txt'

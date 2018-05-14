@@ -37,7 +37,7 @@ If you find **DocFace** helpful to your research, please cite:
 ### Usage
 
 #### Part 1: Preprocessing
-##### Dataset Structure
+##### 1.1 Dataset Structure
 Download the [Ms-Celeb-1M](https://www.msceleb.org/download/cropped) and [LFW](http://vis-www.cs.umass.edu/lfw/lfw.tgz) dataset for training and testing the base model. Other dataset such as CASIA-Webface can also be used for training. Because Ms-Celeb-1M is known to be a very noisy dataset, we use the [clean list](https://github.com/AlfredXiangWu/face_verification_experiment) provided by Wu et al. Arrange Ms-Celeb-1M dataset and LFW dataset as the following structure, where each subfolder represents a subject:
 
     Aaron_Eckhart
@@ -64,13 +64,13 @@ For the ID-Selfie dataset, make sure each folder has only two images and is in s
     ...
 Here "1.jpg" are the ID photos and "2.jpg" are the selfies.
 
-##### Face Alignment
+##### 1.2 Face Alignment
 We align all the face images following the [SphereFace](http://openaccess.thecvf.com/content_cvpr_2017/papers/Liu_SphereFace_Deep_Hypersphere_CVPR_2017_paper.pdf). The user is recommended to use their code for face alignment. It is okay to use other face alignment methods, but make sure all the images are resized to 96 x 112. Users can also use an input size of 112 x 112 by changing the "image_size" in the configuration files.
 
-#### Part 2: Train
+#### Part 2: Training
 **Note:** In this part, we assume you are in the directory **`$DOCFACE_ROOT/`**
 
-##### Training the base model
+##### 2.1 Training the base model
 
 1. Set up the dataset paths in `config/basemodel.py`:
 
@@ -79,7 +79,7 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 	train_dataset_path = '/path/to/msceleb1m/dataset/folder'
 	
 	# Testing dataset path
-	train_dataset_path = '/path/to/lfw/dataset/folder'
+	test_dataset_path = '/path/to/lfw/dataset/folder'
 	```
 
 2. Due to the memory cost, the user may need more than one GPUs to use a batch size of `256` on Ms-Celeb-1M. In particular, we used four GTX 1080 Ti GPUs. In such cases, change the following entry in `config/basemodel.py`: 
@@ -94,11 +94,11 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 3. Run the following command in the terminal:
 
 	```Shell
-	python train_base.py config/basemodel.py
+	python src/train_base.py config/basemodel.py
 	```
     After training, a model folder will appear under`log/faceres/`. We will use it for fine-tuning. If the training code is run more than once, multiple folders will appear with time stamps as their names.
     
-##### Fine-tuning on the ID-Selfie datasets
+##### 2.2 Fine-tuning on the ID-Selfie datasets
 
 1. Set up the dataset paths and the pre-trained model path in `config/finetune.py`
 
@@ -107,7 +107,7 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 	train_dataset_path = '/path/to/training/dataset/folder'
 	
 	# Testing dataset path
-	train_dataset_path = '/path/to/testing/dataset/folder'
+	test_dataset_path = '/path/to/testing/dataset/folder'
 	
 	...
 	
@@ -118,7 +118,7 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 2. Run the following command in the terminal:
 
 	```Shell
-	python train_sibling.py config/finetune.py
+	python src/train_sibling.py config/finetune.py
 	```
 
 #### Part 3: Feature Extraction
@@ -127,7 +127,7 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 To extract features using a pre-trained model (either base network or sibling network), prepare a `.txt` file of image list. Then run the following command in terminal:
 
 ```Shell
-python extract_features.py \
+python src/extract_features.py \
 --model_dir /path/to/pretrained/model/dir
 --image_list /path/to/imagelist.txt
 --output /path/to/output.npy
