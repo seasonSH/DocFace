@@ -89,14 +89,12 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
     num_gpus = 1
     ```
  
-    The user can also use the pre-trained [base model](#models) we provide.
- 
 3. Run the following command in the terminal:
 
 	```Shell
 	python src/train_base.py config/basemodel.py
 	```
-    After training, a model folder will appear under`log/faceres/`. We will use it for fine-tuning. If the training code is run more than once, multiple folders will appear with time stamps as their names.
+    After training, a model folder will appear under`log/faceres_ms/`. We will use it for fine-tuning. If the training code is run more than once, multiple folders will appear with time stamps as their names. The user can also skip this part and use the pre-trained [base model](#models) we provide.
     
 #### 2.2 Fine-tuning on the ID-Selfie datasets
 
@@ -124,7 +122,7 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 ### Part 3: Feature Extraction
 **Note:** In this part, we assume you are in the directory **`$DOCFACE_ROOT/`**
 
-To extract features using a pre-trained model (either base network or sibling network), prepare a `.txt` file of image list. Then run the following command in terminal:
+To extract features using a pre-trained model (either base network or sibling network), prepare a `.txt` file of image list. The images should be aligned in the same way as the training dataset. Then run the following command in terminal:
 
 ```Shell
 python src/extract_features.py \
