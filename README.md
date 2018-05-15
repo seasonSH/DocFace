@@ -128,8 +128,8 @@ To extract features using a pre-trained model (either base network or sibling ne
 
 ```Shell
 python src/extract_features.py \
---model_dir /path/to/pretrained/model/dir
---image_list /path/to/imagelist.txt
+--model_dir /path/to/pretrained/model/dir \
+--image_list /path/to/imagelist.txt \
 --output /path/to/output.npy
 ```
 
@@ -137,15 +137,14 @@ Notice that when extracting features using a sibling network, we assume that the
 
 ## Models
 
-- BaseModel (unconstraind face matching): [Google Drive](https://drive.google.com/file/d/1YIZXsvtxQ4HkwGUDqq3bSwZVIv9e338R/view?usp=sharing)
+- BaseModel (unconstraind face matching): [Google Drive](https://drive.google.com/file/d/1YIZXsvtxQ4HkwGUDqq3bSwZVIv9e338R/view?usp=sharing) | [Baidu Yun](https://pan.baidu.com/s/16IbYbnNkk1YsEnlcrpadVA)
 
-- Fine-tuned DocFace model: [Google Drive](https://drive.google.com/file/d/1GJHjapZo8HcQ6aKEpSOZeAJCd9uaO5j1/view?usp=sharing)
-
+- Fine-tuned DocFace model: [Google Drive](https://drive.google.com/file/d/1GJHjapZo8HcQ6aKEpSOZeAJCd9uaO5j1/view?usp=sharing) | [Baidu Yun](https://pan.baidu.com/s/1RbBukIuu2nHHCOzmy_2MmA)
 
 ## Results
 - Using our pre-trained base model, one should be able to achieve 99.67% on the standard LFW verification protocol and 99.60% on the [BLUFR](http://www.cbsr.ia.ac.cn/users/scliao/projects/blufr/) protocol. Similar results should be achieved by using our code to train the Face-ResNet on Ms-Celeb-1M.
 
-- Using our private dataset, we see a significant improvement of performance on the ID-Selfie matching problem:
+- Using the proposed Max-margin Pairwise Score loss and sibling network, DocFace acheives a significant improvement compared with Base Model on our private ID-Selfie dataset after transfer learning:
     
     <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/table1.png" width="500px">
     <br>

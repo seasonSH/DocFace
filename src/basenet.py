@@ -205,8 +205,8 @@ class BaseNetwork:
         tflib.load_model(self.sess, *args, **kwargs)
         self.phase_train_placeholder = self.graph.get_tensor_by_name('phase_train:0')
         self.keep_prob_placeholder = self.graph.get_tensor_by_name('keep_prob:0')
-        self.inputs = self.graph.get_tensor_by_name('image_batch:0')
-        self.outputs = self.graph.get_tensor_by_name('embeddings:0')
+        self.inputs = self.graph.get_tensor_by_name('inputs:0')
+        self.outputs = self.graph.get_tensor_by_name('outputs:0')
 
     def extract_feature(self, images, batch_size, verbose=False):
         num_images = images.shape[0] if type(images)==np.ndarray else len(images)
