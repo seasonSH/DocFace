@@ -137,7 +137,7 @@ Notice that when extracting features using a sibling network, we assume that the
 
 - BaseModel (unconstraind face matching): [Google Drive](https://drive.google.com/file/d/1YIZXsvtxQ4HkwGUDqq3bSwZVIv9e338R/view?usp=sharing) | [Baidu Yun](https://pan.baidu.com/s/16IbYbnNkk1YsEnlcrpadVA)
 
-- Fine-tuned DocFace model: [Google Drive](https://drive.google.com/file/d/1GJHjapZo8HcQ6aKEpSOZeAJCd9uaO5j1/view?usp=sharing) | [Baidu Yun](https://pan.baidu.com/s/1RbBukIuu2nHHCOzmy_2MmA)
+- Fine-tuned DocFace model: (contact the author)
 
 ## Results
 - Using our pre-trained base model, one should be able to achieve 99.67% on the standard LFW verification protocol and 99.60% on the [BLUFR](http://www.cbsr.ia.ac.cn/users/scliao/projects/blufr/) protocol. Similar results should be achieved by using our code to train the Face-ResNet on Ms-Celeb-1M.
