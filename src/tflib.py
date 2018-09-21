@@ -356,7 +356,7 @@ def am_softmax(prelogits, label, num_classes,
         _logits_neg = _logits_neg * scale
         _logits_neg = tf.reduce_logsumexp(_logits_neg, axis=1)[:,None]
 
-        loss_ = tf.nn.relu(m + _logits_neg - _logits_pos)
+        loss_ = tf.nn.softplus(m + _logits_neg - _logits_pos)
         loss = tf.reduce_mean(loss_, name='am_softmax')
 
 
@@ -413,7 +413,7 @@ def diam_softmax(prelogits, label, num_classes,
         _logits_neg = _logits_neg * scale
         _logits_neg = tf.reduce_logsumexp(_logits_neg, axis=1)[:,None]
 
-        loss_ = tf.nn.relu(m + _logits_neg - _logits_pos)
+        loss_ = tf.nn.softplus(m + _logits_neg - _logits_pos)
         loss = tf.reduce_mean(loss_, name='diam_softmax')
 
         # Dynamic weight imprinting

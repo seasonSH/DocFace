@@ -82,7 +82,7 @@ batch_format = 'random_AB_pair'
 epoch_size = 100
 
 # Number of epochs
-num_epochs = 20
+num_epochs = 40
 
 # learning rate strategy
 learning_rate_strategy = 'step'
@@ -91,7 +91,7 @@ learning_rate_strategy = 'step'
 lr = 0.01
 learning_rate_schedule = {
     0:      1 * lr,
-    1600:    0.1 * lr,
+    3200:    0.1 * lr,
 }
 
 # Multiply the learning rate for variables that contain certain keywords
@@ -104,9 +104,14 @@ restore_model = '/path/to/the/pretrained/model/folder'
 # Keywords to filter restore variables, set None for all
 restore_scopes = ['FaceResNet']
 
-# For sibling networks, scope names needs to be replaced 
-# to restore from base networks. Set true if so.
-replace_scopes = True
+# For sibling networks, a dictionary needs to be built to map their variables
+# to the variables in the base network (they have different variable names).
+# This argument decides the mapping between the sibling network and target network.
+replace_scopes = {
+    "FaceResNet/NetA": "FaceResNet",
+    "FaceResNet/NetB": "FaceResNet",
+    "FaceResNet/SharedNet": "FaceResNet",
+}
 
 # Weight decay for model variables
 weight_decay = 5e-4

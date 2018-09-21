@@ -5,7 +5,7 @@ By Yichun Shi and Anil K. Jain
 <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/docface.png" width="600px">
 
 ## Update Notes
-+ 09/20/2018: The content of DocFace+ is added, including DIAM-Softmax, partially shared sibling network, support for multiple ID/selfie per class.
++ 09/20/2018: The content of DocFace+ is added, including DIAM-Softmax, partially shared sibling networks and support for multiple ID/selfie per class.
 
 ## Contents
 0. [Introduction](#introduction)
@@ -18,7 +18,7 @@ By Yichun Shi and Anil K. Jain
 
 ## Introduction
 
-This repository includes the TensorFlow implementation of [**DocFace**](https://arxiv.org/abs/1805.02283), which is a system proposed for matching ID photos and live face photos. DocFace is shown to significantly outperform general face matchers on the ID-Selfie matching problem. We here give the example training code and pre-trained models in the paper. For the preprocessing part, we follow the repository of [SphereFace](http://openaccess.thecvf.com/content_cvpr_2017/papers/Liu_SphereFace_Deep_Hypersphere_CVPR_2017_paper.pdf) to align the face images using [MTCNN](https://github.com/kpzhang93/MTCNN_face_detection_alignment). The user can also use other methods for face alignment. Because the dataset used in the paper is private, we cannot publish it here. One can test the system on their own dataset.
+This repository includes the TensorFlow implementation of [**DocFace**](https://arxiv.org/abs/1805.02283) and [**DocFace+**](https://arxiv.org/abs/1809.05620), which is a system proposed for matching ID photos and live face photos. DocFace is shown to significantly outperform general face matchers on the ID-Selfie matching problem. We here give the example training code and pre-trained models in the paper. For the preprocessing part, we follow the repository of [SphereFace](http://openaccess.thecvf.com/content_cvpr_2017/papers/Liu_SphereFace_Deep_Hypersphere_CVPR_2017_paper.pdf) to align the face images using [MTCNN](https://github.com/kpzhang93/MTCNN_face_detection_alignment). The user can also use other methods for face alignment. Because the dataset used in the paper is private, we cannot publish it here. One can test the system on their own dataset.
 
 
 ## Citation
@@ -121,7 +121,7 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
     restore_model = '/path/to/the/pretrained/model/folder'
     ```
 
-2. Tune the parameter of loss function according to your dataset in `config/finetune.py`
+2. Tune the parameters of loss functions according to your dataset in `config/finetune.py`, e.g.
 
     ```Python
     # Loss functions and their parameters.
