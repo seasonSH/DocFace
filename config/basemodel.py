@@ -73,6 +73,10 @@ optimizer = "MOM"
 # Number of samples per batch
 batch_size = 256
 
+# Structure of batch, use one of following:
+# random_sample, random_pair, random_AB_pair
+batch_format = 'random_sample'
+
 # Number of batches per epoch
 epoch_size = 1000
 
@@ -119,5 +123,3 @@ losses = {
     'am': {'scale': 'auto', 'm':5.0}
 }
 
-# Build batches with by concatenating random AB pairs from different classes
-use_pair_batch = False
