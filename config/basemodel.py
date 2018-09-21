@@ -114,11 +114,10 @@ keep_prob = 1.0
 # Loss functions and their parameters
 losses = {
     # 'softmax': {},
-    # 'cosine': {'gamma': 'auto'},
+    # 'cosine': {'scale': 'auto'},
     # 'angular': {'m': 4, 'lamb_min':5.0, 'lamb_max':1500.0},
-    'am': {'gamma': 'auto', 'm':5.0}
+    'am': {'scale': 'auto', 'm':5.0}
 }
 
-# Build batches with by concatenating pairs from different classes
-# Set true only if you are using Max-margin Pair poss function.
+# Build batches with by concatenating random AB pairs from different classes
 use_pair_batch = False

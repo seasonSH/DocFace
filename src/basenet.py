@@ -116,17 +116,23 @@ class BaseNetwork:
                                 # AM-Softmax
                                 if 'am' in config.losses.keys():
                                     am_loss = tflib.am_softmax(prelogits, labels, num_classes, 
-                                                            global_step, weight_decay=config.weight_decay,
+                                                            weight_decay=config.weight_decay,
                                                             **config.losses['am'])
                                     losses.append(am_loss)
                                     insert_dict('loss', am_loss)
                                 # Max-margin Pairwise Score (MPS)
                                 if 'pair' in config.losses.keys():
                                     pair_loss = tflib.pair_loss(prelogits, labels, num_classes, 
-                                                            global_step, weight_decay=config.weight_decay,
                                                             **config.losses['pair'])  
                                     losses.append(pair_loss)
                                     insert_dict('loss', pair_loss)
+                                # DIAM-Softmax
+                                if 'diam' in config.losses.keys():
+                                    diam_loss = tflib.diam_softmax(prelogits, labels, num_classes, 
+                                                            **config.losses['diam'])  
+                                    diam_loss = tf.identity(diam_loss, name='diam_loss')
+                                    losses.append(diam_loss)
+                                    insert_dict('amloss', diam_loss)
 
                                # Collect all losses
                                 reg_loss = tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES), name='reg_loss')

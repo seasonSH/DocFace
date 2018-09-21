@@ -4,6 +4,9 @@ By Yichun Shi and Anil K. Jain
 
 <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/docface.png" width="600px">
 
+## Update Notes
++ 09/20/2018: The content of DocFace+ is added, including DIAM-Softmax, partially shared sibling network, support for multiple ID/selfie per class.
+
 ## Contents
 0. [Introduction](#introduction)
 0. [Citation](#citation)
@@ -20,18 +23,23 @@ This repository includes the TensorFlow implementation of [**DocFace**](https://
 
 ## Citation
 
-If you find [**DocFace**](https://arxiv.org/abs/1805.02283) helpful to your research, please cite:
+    @article{shi2018docface+,
+      title = {DocFace+: ID Document to Selfie Matching},
+      author = {Shi, Yichun and Jain, Anil K.},
+      booktitle = {arXiv:1809.05620},
+      year = {2018}
+    }
+    @article{shi2018docface,
+      title = {DocFace: Matching ID Document Photos to Selfies},
+      author = {Shi, Yichun and Jain, Anil K.},
+      booktitle = {arXiv:1805.02283},
+      year = {2018}
+    }
 
-	@article{shi2018docface,
-	  title = {DocFace: Matching ID Document Photos to Selfies},
-	  author = {Shi, Yichun and Jain, Anil K.},
-	  booktitle = {arXiv:1805.02283},
-	  year = {2018}
-	}
 
 ## Requirements
 1. Requirements for `Python3`
-2. Requirements for `Tensorflow 1.2r` or newer versions.
+2. Requirements for `Tensorflow r1.2` or newer versions.
 3. Run `pip install -r requirements.txt` for other dependencies.
 
 ## Usage
@@ -53,16 +61,16 @@ Download the [Ms-Celeb-1M](https://www.msceleb.org/download/cropped) and [LFW](h
         Aaron_Peirsol_0004.jpg
     ...
 
-For the ID-Selfie dataset, make sure each folder has only two images and is in such a structure:
+For the ID-Selfie dataset, make sure all the foldesr in such a structure, where ID images and selfies start with "A" and "B", respectively :
 
     Subject1
-        1.jpg
-        2.jpg
+        A001.jpg
+        B001.jpg
+        B002.jpg
     Subject2
-        1.jpg
-        2.jpg
+        A001.jpg
+        B001.jpg
     ...
-Here "1.jpg" are the ID photos and "2.jpg" are the selfies.
 
 #### 1.2 Face Alignment
 We align all the face images following the [SphereFace](http://openaccess.thecvf.com/content_cvpr_2017/papers/Liu_SphereFace_Deep_Hypersphere_CVPR_2017_paper.pdf). The user is recommended to use their code for face alignment. It is okay to use other face alignment methods, but make sure all the images are resized to 96 x 112. Users can also use an input size of 112 x 112 by changing the "image_size" in the configuration files.
@@ -74,13 +82,13 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
 
 1. Set up the dataset paths in `config/basemodel.py`:
 
-	```Python
-	# Training dataset path
-	train_dataset_path = '/path/to/msceleb1m/dataset/folder'
-	
-	# Testing dataset path
-	test_dataset_path = '/path/to/lfw/dataset/folder'
-	```
+    ```Python
+    # Training dataset path
+    train_dataset_path = '/path/to/msceleb1m/dataset/folder'
+    
+    # Testing dataset path
+    test_dataset_path = '/path/to/lfw/dataset/folder'
+    ```
 
 2. Due to the memory cost, the user may need more than one GPUs to use a batch size of `256` on Ms-Celeb-1M. In particular, we used four GTX 1080 Ti GPUs. In such cases, change the following entry in `config/basemodel.py`: 
 
@@ -91,33 +99,43 @@ We align all the face images following the [SphereFace](http://openaccess.thecvf
  
 3. Run the following command in the terminal:
 
-	```Shell
-	python src/train_base.py config/basemodel.py
-	```
+    ```Shell
+    python src/train_base.py config/basemodel.py
+    ```
     After training, a model folder will appear under`log/faceres_ms/`. We will use it for fine-tuning. If the training code is run more than once, multiple folders will appear with time stamps as their names. The user can also skip this part and use the pre-trained [base model](#models) we provide.
     
 #### 2.2 Fine-tuning on the ID-Selfie datasets
 
 1. Set up the dataset paths and the pre-trained model path in `config/finetune.py`
 
-	```Python
-	# Training dataset path
-	train_dataset_path = '/path/to/training/dataset/folder'
-	
-	# Testing dataset path
-	test_dataset_path = '/path/to/testing/dataset/folder'
-	
-	...
-	
-	# The model folder from which to retore the parameters
+    ```Python
+    # Training dataset path
+    train_dataset_path = '/path/to/training/dataset/folder'
+    
+    # Testing dataset path
+    test_dataset_path = '/path/to/testing/dataset/folder'
+    
+    ...
+    
+    # The model folder from which to retore the parameters
     restore_model = '/path/to/the/pretrained/model/folder'
-	```
+    ```
 
-2. Run the following command in the terminal:
+2. Tune the parameter of loss function according to your dataset in `config/finetune.py`
 
-	```Shell
-	python src/train_sibling.py config/finetune.py
-	```
+    ```Python
+    # Loss functions and their parameters.
+    losses = {
+        'diam': {'scale': 'auto', 'm': 5.0, 'alpha':1.0}
+    }
+    ```
+    In our experiments, we found that there is no necessity to manually choose "scale". But in some cases one may find it helpful to change the "scale" to a fixed value. A smaller "alpha" should be favored when the average number of samples per class is larger.
+    
+3. Run the following command in the terminal to start fine-tuning:
+
+    ```Shell
+    python src/train_sibling.py config/finetune.py
+    ```
 
 ### Part 3: Feature Extraction
 **Note:** In this part, we assume you are in the directory **`$DOCFACE_ROOT/`**
@@ -131,7 +149,7 @@ python src/extract_features.py \
 --output /path/to/output.npy
 ```
 
-Notice that when extracting features using a sibling network, we assume that the images are in the order of template, selfie, template, selfie ... One needs to change the code for other cases.
+Notice that the images in the image list follow the same naming convention of the training dataset. That is, ID images should start with "A\*\*" and selfie images should start with "B\*\*". An example imagelist.txt is given in the repo.
 
 ## Models
 
@@ -143,12 +161,21 @@ Notice that when extracting features using a sibling network, we assume that the
 - Using our pre-trained base model, one should be able to achieve 99.67% on the standard LFW verification protocol and 99.60% on the [BLUFR](http://www.cbsr.ia.ac.cn/users/scliao/projects/blufr/) protocol. Similar results should be achieved by using our code to train the Face-ResNet on Ms-Celeb-1M.
 
 - Using the proposed Max-margin Pairwise Score loss and sibling network, DocFace acheives a significant improvement compared with Base Model on our private ID-Selfie dataset after transfer learning:
-    
+
     <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/table1.png" width="500px">
     <br>
     <br>
     <br>
     <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/table2.png" width="500px">
+
+- Results of DIAM-Softmax and DocFace+ on a combination of ID-Selfie-A, ID-Selifie-B and another larger dataset, most of whose classes have only two images (a pair of ID and selfie):
+
+    <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/loss_compare.png" width="500px">
+    <br>
+    <br>
+    <br>
+    <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/table7.png" width="500px">
+
 
 ## Contact
 

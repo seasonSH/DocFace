@@ -35,8 +35,10 @@ import shutil
 from multiprocessing import Process, Queue
 
 
-# Here we assume that the templates are called '1.jpg'    
-is_pro = lambda x : '1.jpg' not in x
+# The images are separated into two types, A and B, for different branches in 
+# the sibling networks. For example, in the ID-selfie problem, type A represents
+# ID images, and type B stands for selfie images.
+is_typeB = lambda x : os.path.basename(x).startswith('B')
 
 
 def import_file(full_path_to_module, name='module.name'):
@@ -69,15 +71,18 @@ class DataClass():
         self.class_name = class_name
         self.indices = list(indices)
         self.label = label
-        self.index_pro = None
-        self.index_tmp = None
+        self.indices_B = None
+        self.indices_A = None
         return
 
-    def build_pair(self):
-        assert len(self.indices) == 2
-        assert self.index_tmp is not None and len(self.index_tmp)==1, str(self.index_tmp)
-        assert self.index_pro is not None and len(self.index_pro)==1, str(self.index_pro)
-        return [[self.index_tmp[0], self.index_pro[0]]]
+    def random_pair(self):
+        return np.random.permutation(self.indices_A)[:2]
+
+    def random_AB_pair(self):
+        assert self.indices_A is not None and self.indices_B is not None
+        indices_A = np.random.permutation(self.indices_A)[0]
+        indices_B = np.random.permutation(self.indices_B)[0]
+        return [indices_A, indices_B]
 
 
 class Dataset():
@@ -91,8 +96,7 @@ class Dataset():
         self.index_queue = None
         self.queue_idx = None
         self.batch_queue = None
-        self.use_pair_batch = False
-        self.is_pro = False
+        self.is_typeB =  None
 
         if path is not None:
             self.init_from_path(path)
@@ -160,88 +164,114 @@ class Dataset():
         self.classes = np.array(classes, dtype=np.object)
         self.num_classes = len(classes)
 
-    def separate_template_and_probes(self):
+    def separate_AB(self):
         assert type(self.images[0]) is str
         
-        self.is_pro = np.zeros(len(self.images), dtype=np.bool)
+        self.is_typeB = np.zeros(len(self.images), dtype=np.bool)
 
         for c in self.classes:
-            # Find the index of template file
-            c.index_tmp = [i for i in c.indices if not is_pro(self.images[i])]
-            assert len(c.index_tmp) >= 1, str(self.images[c.indices])
+            # Find the index of type A file
+            c.indices_A = [i for i in c.indices if not is_typeB(self.images[i])]
+            assert len(c.indices_A) >= 1, str(self.images[c.indices])
             
-            # Find the index of probe file
-            c.index_pro = [i for i in c.indices if is_pro(self.images[i])]
-            assert len(c.index_pro) >= 1, str(self.images[c.indices])
+            # Find the index of type B file
+            c.indices_B = [i for i in c.indices if is_typeB(self.images[i])]
+            assert len(c.indices_B) >= 1, str(self.images[c.indices])
             
-            self.is_pro[c.index_pro] = True
-             
-    def fuse_probe_features(self, feat):
-        assert self.classes[0].index_pro is not None, "Make sure to templates have been selected for the dataset"
-        feat_tmp = np.zeros((self.num_classes, feat.shape[1]))
-        feat_pro = np.zeros((self.num_classes, feat.shape[1]))
+            self.is_typeB[c.indices_B] = True
 
-        for i,c in enumerate(self.classes):
-            feat_tmp[i,:] = feat[c.index_tmp[0],:]
-            feat_pro[i,:] = normalize(feat[c.index_pro,:].mean(axis=0))
 
-        feat_new = np.stack([feat_tmp, feat_pro], axis=1).reshape([2*self.num_classes, -1])
-        return feat_new
-
+    # Data Loading
     def init_index_queue(self):
-        if self.use_pair_batch: 
-            if self.classes[0].index_pro is None:
-                self.separate_template_and_probes()       
-            pair_queue = []
-            for dataclass in self.classes:
-                pair_queue.extend(dataclass.build_pair())
-            random.shuffle(pair_queue)
-            self.index_queue = [idx for cluster in pair_queue for idx in cluster]
-        else:
-            size = self.images.shape[0]
-            self.index_queue = np.random.permutation(size)
-        self.queue_idx = 0
-
-    def pop_index_queue(self, batch_size):
         if self.index_queue is None:
-            self.init_index_queue()
+            self.index_queue = Queue()
+
+        index_queue = np.random.permutation(len(self.images))[:,None]
+        for idx in list(index_queue):
+            self.index_queue.put(idx)
+
+
+    def get_batch(self, batch_size, batch_format):
+        ''' Get the indices from index queue and fetch the data with indices.'''
         indices_batch = []
-        while batch_size >= len(self.index_queue) - self.queue_idx:
-            indices_batch.extend(self.index_queue[self.queue_idx:])
-            batch_size -= len(self.index_queue) - self.queue_idx
-            self.init_index_queue()
-        indices_batch.extend(self.index_queue[self.queue_idx : self.queue_idx+batch_size])
-        self.queue_idx += batch_size
-        return indices_batch
 
-    def get_batch(self, batch_size):
-        indices_batch = self.pop_index_queue(batch_size)
+        if batch_format == 'random_sample':
+            while len(indices_batch) < batch_size:
+                indices_batch.extend(self.index_queue.get(block=True, timeout=30))
+            assert len(indices_batch) == batch_size
+        elif batch_format == 'random_pair':
+            assert batch_size%2 == 0
+            classes = np.random.permutation(self.classes)[:batch_size//2]
+            indices_batch = np.concatenate([c.random_pair() for c in classes], axis=0)
+        elif batch_format == 'random_AB_pair':
+            assert batch_size%2 == 0
+            classes = np.random.permutation(self.classes)[:batch_size//2]
+            indices_batch = np.concatenate([c.random_AB_pair() for c in classes], axis=0)
+        else:
+            raise ValueError('get_batch: Unknown batch_format: {}!'.format(batch_format))
 
-        image_batch = self.images[indices_batch]
-        label_batch = self.labels[indices_batch]
-        return image_batch, label_batch
+        batch = {}
+        if len(indices_batch) > 0:
+            batch['images'] = self.images[indices_batch]
+            batch['labels'] = self.labels[indices_batch]
+            if self.is_typeB is not None:
+                batch['is_typeB'] = self.is_typeB[indices_batch]
+        return batch
+
 
     # Multithreading preprocessing images
-    def start_batch_queue(self, config, is_training, maxsize=16):
-        self.use_pair_batch = config.use_pair_batch
-        if self.use_pair_batch:
-            assert config.batch_size % 2 == 0, 'When using pair batch, the batch size should be an even number'
-        self.batch_queue = Queue(maxsize=maxsize)
-        
-        def batch_queue_worker():
+    def start_index_queue(self):
+        self.index_queue = Queue()
+        def index_queue_worker():
             while True:
-                image_path_batch, label_batch = self.get_batch(config.batch_size)
-                image_batch = preprocess(image_path_batch, config, is_training)
-                self.batch_queue.put((image_batch, label_batch))
+                if self.index_queue.empty():
+                    self.init_index_queue()
+                time.sleep(0.01)
+        self.index_worker = Process(target=index_queue_worker)
+        self.index_worker.daemon = True
+        self.index_worker.start()
 
-        worker = Process(target=batch_queue_worker)
-        worker.daemon = True
-        worker.start()
-    
-    
+    def start_batch_queue(self, config, is_training, maxsize=1, num_threads=4):
+
+        if self.index_queue is None:
+            self.start_index_queue()
+
+        self.batch_queue = Queue(maxsize=maxsize)
+        def batch_queue_worker(seed):
+            np.random.seed(seed)
+            while True:
+                batch = self.get_batch(config.batch_size, config.batch_format)
+                if batch is not None:
+                    batch['image_paths'] = batch['images']
+                    batch['images'] = preprocess(batch['image_paths'], config, is_training)
+                self.batch_queue.put(batch)
+
+        self.batch_workers = []
+        for i in range(num_threads):
+            worker = Process(target=batch_queue_worker, args=(i,))
+            worker.daemon = True
+            worker.start()
+            self.batch_workers.append(worker)
+
+
     def pop_batch_queue(self):
         batch = self.batch_queue.get(block=True, timeout=60)
         return batch
+
+    def release_queue(self):
+        if self.index_queue is not None:
+            self.index_queue.close()
+        if self.batch_queue is not None:
+            self.batch_queue.close()
+        if self.index_worker is not None:
+            self.index_worker.terminate()
+            del self.index_worker
+            self.index_worker = None
+        if self.batch_workers is not None:
+            for w in self.batch_workers:
+                w.terminate()
+                del w
+            self.batch_workers = None
 
 
 
@@ -401,21 +431,29 @@ def get_pairwise_score_label(score_mat, label):
     label_vec = label_mat[triu_indices]
     return score_vec, label_vec
 
-def test_roc(features, FARs):
-    ''' Test the TAR@FAR for pairwise data. the given features
-    should be in the order of [template, probe, template, probe, ...]'''
-
-    n, d = features.shape
-    assert n % 2 == 0
-    features = np.reshape(features, [-1,2,d])
-    feat1, feat2 = features[:,0,:], features[:,1,:]
-    score_mat = - euclidean(feat1, feat2)
-    label_mat = np.eye(n//2, dtype=np.bool)
-
-    TARs, FARs, thresholds = ROC(score_mat.flatten(), label_mat.flatten(), 
-                                                FARs=FARs, get_false_indices=False)
-    return TARs, FARs, thresholds
-
+def test_roc(features, labels, is_typeB, FARs, return_index=False, score_mat=None):
+    n = features.shape[0]
+    assert labels.shape[0] == is_typeB.shape[0] == n
+    if score_mat is None:
+        score_mat = -euclidean(features, features)
+    label_mat = labels.reshape([-1,1]) == labels.reshape([1,-1])
+    is_pair = is_typeB.reshape([-1,1]) != is_typeB.reshape([1,-1])
+    is_pair = np.triu(is_pair, 1)
+    
+    score_vec = score_mat[is_pair]
+    label_vec = label_mat[is_pair]
+    if return_index:
+        rc = np.mgrid[0:n,0:n].transpose([1,2,0])
+        rc_vec = rc[is_pair,:]
+        TARs, FARs, thresholds, fai, fri = ROC(score_vec, label_vec,
+            FARs=FARs, get_false_indices=True)
+        for i in range(len(FARs)):
+            fai[i], fri[i] = rc_vec[fai[i]], rc_vec[fri[i]]
+        return TARs, FARs, thresholds, fai, fri
+    else:
+        TARs, FARs, thresholds = ROC(score_vec, label_vec,
+            FARs=FARs, get_false_indices=False)
+        return TARs, FARs, thresholds
 
 def zero_one_switch(length):
     ''' Build a switch vector of the given length.'''

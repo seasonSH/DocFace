@@ -50,7 +50,7 @@ def main(args):
     # Initalization for running
     log_dir = utils.create_log_dir(config, config_file)
     summary_writer = tf.summary.FileWriter(log_dir, network.graph)
-    if config.restore_model:
+    if config.restore_model is not None:
         network.restore_model(config.restore_model, config.restore_scopes)
 
     # Set up LFW test protocol and load images
@@ -77,9 +77,9 @@ def main(args):
         for step in range(config.epoch_size):
             # Prepare input
             learning_rate = utils.get_updated_learning_rate(global_step, config)
-            image_batch, label_batch = trainset.pop_batch_queue()
+            batch = trainset.pop_batch_queue()
         
-            wl, sm, global_step = network.train(image_batch, label_batch, learning_rate, config.keep_prob)
+            wl, sm, global_step = network.train(batch['images'], batch['labels'], learning_rate, config.keep_prob)
 
             # Display
             if step % config.summary_interval == 0:

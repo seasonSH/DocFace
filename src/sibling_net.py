@@ -55,6 +55,7 @@ class SiblingNetwork:
                 phase_train_placeholder = tf.placeholder(tf.bool, name='phase_train')
                 switch_place_holder = tf.placeholder(tf.bool, shape=[None], name="switch_all")
                 global_step = tf.Variable(0, trainable=False, dtype=tf.int32, name='global_step')
+                network = imp.load_source('network', config.network)
 
                 image_splits = tf.split(image_batch_placeholder, config.num_gpus)
                 switch_splits = tf.split(switch_place_holder, config.num_gpus)
@@ -78,64 +79,58 @@ class SiblingNetwork:
                                     self.inputs = images
                                     self.switch = switch
                                 
-                                images_tmp = tf.boolean_mask(images, tf.logical_not(switch), name="images_template")
-                                images_pro =  tf.boolean_mask(images, switch,name="images_probe")
-                                labels_tmp = tf.boolean_mask(labels, tf.logical_not(switch), name="labels_template")
-                                labels_pro =  tf.boolean_mask(labels, switch,name="labels_probe")
+                                images_A = tf.boolean_mask(images, tf.logical_not(switch), name="images_A")
+                                images_B =  tf.boolean_mask(images, switch, name="images_B")
+                                labels_A = tf.boolean_mask(labels, tf.logical_not(switch), name="labels_B")
+                                labels_B =  tf.boolean_mask(labels, switch, name="labels_B")
 
-                                network = imp.load_source('network', config.network)
-                                with tf.variable_scope('TemplateNet'):
-                                    prelogits_tmp = network.inference(images_tmp, keep_prob_placeholder, phase_train_placeholder,
-                                                            bottleneck_layer_size = config.embedding_size, 
-                                                            weight_decay = config.weight_decay, 
-                                                            model_version = config.model_version)
-                                    prelogits_tmp = tf.identity(prelogits_tmp, name='prelogits_tmp')
-                                    embeddings_tmp = tf.nn.l2_normalize(prelogits_tmp, dim=1, name='embeddings_tmp')
-
-                                with tf.variable_scope('ProbeNet'):
-                                    prelogits_pro = network.inference(images_pro, keep_prob_placeholder, phase_train_placeholder,
-                                                            bottleneck_layer_size = config.embedding_size, 
-                                                            weight_decay = config.weight_decay, 
-                                                            model_version = config.model_version)
-                                    prelogits_pro = tf.identity(prelogits_pro, name='prelogits_pro')
-                                    embeddings_pro = tf.nn.l2_normalize(prelogits_pro, dim=1, name='embeddings_pro')
+                                prelogits_A, prelogits_B = network.inference(images_A, images_B,
+                                        keep_prob_placeholder, phase_train_placeholder,bottleneck_layer_size = config.embedding_size, 
+                                        weight_decay = config.weight_decay, model_version = config.model_version)
+                                prelogits_A = tf.identity(prelogits_A, name='prelogits_A')
+                                prelogits_B = tf.identity(prelogits_B, name='prelogits_B')
+                                embeddings_A = tf.nn.l2_normalize(prelogits_A, dim=1, name='embeddings_A')
+                                embeddings_B = tf.nn.l2_normalize(prelogits_B, dim=1, name='embeddings_B')
                                 if i == 0:
-                                    self.outputs_tmp = tf.identity(embeddings_tmp, name='outputs_tmp')
-                                    self.outputs_pro = tf.identity(embeddings_pro, name='outputs_pro')
+                                    self.outputs_A = tf.identity(embeddings_A, name='outputs_A')
+                                    self.outputs_B = tf.identity(embeddings_B, name='outputs_B')
 
 
 
                                 # Build all losses
                                 losses = []
+                                prelogits_all = tf.concat([prelogits_A, prelogits_B], axis=0)
+                                labels_all = tf.concat([labels_A, labels_B], axis=0)
                                 # L2-Softmax
                                 if 'cosine' in config.losses.keys():
-                                    logits, cosine_loss_tmp = tflib.cosine_softmax(prelogits_tmp, labels_tmp, num_classes, 
+                                    logits, cosine_loss = tflib.cosine_softmax(prelogits_all, labels_all, num_classes, 
                                                             weight_decay=config.weight_decay,
                                                             **config.losses['cosine']) 
-                                    logits, cosine_loss_pro = tflib.cosine_softmax(prelogits_pro, labels_pro, num_classes, 
-                                                            weight_decay=config.weight_decay, reuse=True,
-                                                            **config.losses['cosine'])
-                                    cosine_loss = tf.identity(cosine_loss_tmp + cosine_loss_pro, name='cosine_loss')
+                                    cosine_loss = tf.identity(cosine_loss, name='cosine_loss')
                                     losses.append(cosine_loss)
                                     insert_dict('closs', cosine_loss)
                                 # AM-Softmax
                                 if 'am' in config.losses.keys():
-                                    split_loss_tmp = tflib.am_softmax(prelogits_tmp, labels_tmp, num_classes, 
-                                                            global_step, weight_decay=config.weight_decay,
-                                                            **config.losses['am'])  
-                                    split_loss_pro = tflib.am_softmax(prelogits_pro, labels_pro, num_classes, 
-                                                            global_step, weight_decay=config.weight_decay, reuse=True,
-                                                            **config.losses['am'])  
-                                    split_loss = tf.identity(split_loss_tmp + split_loss_pro, name='split_loss')
-                                    losses.append(split_loss)
-                                    insert_dict('amloss', split_loss)
+                                    am_loss = tflib.am_softmax(prelogits_all, labels_all, num_classes, 
+                                                            weight_decay=config.weight_decay,
+                                                            **config.losses['am']) 
+                                    am_loss = tf.identity(am_loss, name='am_loss')
+                                    losses.append(am_loss)
+                                    insert_dict('amloss', am_loss)
                                 # Max-margin Pairwise Score (MPS)
                                 if 'pair' in config.losses.keys():
-                                    pair_loss = tflib.pair_loss_sibling(prelogits_tmp, prelogits_pro, labels_tmp, labels_pro, num_classes, 
-                                                            global_step, weight_decay=config.weight_decay,
+                                    pair_loss = tflib.pair_loss_sibling(prelogits_A, prelogits_B, labels_A, labels_B, num_classes, 
                                                             **config.losses['pair'])  
                                     losses.append(pair_loss)
                                     insert_dict('loss', pair_loss)
+                                # DIAM-Softmax
+                                if 'diam' in config.losses.keys():
+                                    diam_loss = tflib.diam_softmax(prelogits_all, labels_all, num_classes, 
+                                                            **config.losses['diam'])  
+                                    diam_loss = tf.identity(diam_loss, name='diam_loss')
+                                    losses.append(diam_loss)
+                                    insert_dict('amloss', diam_loss)
+
 
                                # Collect all losses
                                 reg_loss = tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES), name='reg_loss')
@@ -207,13 +202,12 @@ class SiblingNetwork:
 
         return wl, sm, step
     
-    def restore_model(self, *args, **kwargs):
-        replace_tmp = {"TemplateNet/": ""}
-        replace_pro = {"ProbeNet/": ""}
-        trainable_variables = self.graph.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="TemplateNet")
-        tflib.restore_model(self.sess, trainable_variables, *args, replace=replace_tmp, **kwargs)
-        trainable_variables = self.graph.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope="ProbeNet")
-        tflib.restore_model(self.sess, trainable_variables, *args, replace=replace_pro, **kwargs)
+    def restore_model(self, replace_scopes, *args, **kwargs):
+        # Scopes are restored one by one to avoid name collision
+        for dst_scope, src_scope in replace_scopes.items():
+            trainable_variables = self.graph.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=dst_scope)
+            replace_rules = {dst_scope: src_scope}
+            tflib.restore_model(self.sess, trainable_variables, *args, replace_rules=replace_rules, **kwargs)
 
     def save_model(self, model_dir, global_step):
         tflib.save_model(self.sess, self.saver, model_dir, global_step)
@@ -225,12 +219,12 @@ class SiblingNetwork:
         self.keep_prob_placeholder = self.graph.get_tensor_by_name('keep_prob:0')
         self.inputs = self.graph.get_tensor_by_name('inputs:0')
         self.switch = self.graph.get_tensor_by_name('switch:0')
-        self.outputs_pro = self.graph.get_tensor_by_name('outputs_pro:0')
-        self.outputs_tmp = self.graph.get_tensor_by_name('outputs_tmp:0')
+        self.outputs_B = self.graph.get_tensor_by_name('outputs_B:0')
+        self.outputs_A = self.graph.get_tensor_by_name('outputs_A:0')
 
     def extract_feature(self, images, switch, batch_size, verbose=False):
         num_images = images.shape[0] if type(images)==np.ndarray else len(images)
-        num_features = self.outputs_pro.shape[1]
+        num_features = self.outputs_B.shape[1]
         result = np.ndarray((num_images, num_features), dtype=np.float32)
         start_time = time.time()
         for start_idx in range(0, num_images, batch_size):
@@ -246,11 +240,18 @@ class SiblingNetwork:
                     self.switch: switch_batch,
                     self.phase_train_placeholder: False,
                     self.keep_prob_placeholder: 1.0}
-            result_tmp, result_pro = self.sess.run([self.outputs_tmp, self.outputs_pro], feed_dict=feed_dict)
-            result_temp = np.ndarray((end_idx-start_idx, num_features), dtype=np.float32)
-            result_temp[~switch_batch,:] = result_tmp
-            result_temp[switch_batch,:] = result_pro
-            result[start_idx:end_idx] = result_temp
+            if np.any(switch_batch) and np.any(~switch_batch):
+                result_A, result_B = self.sess.run([self.outputs_A, self.outputs_B], feed_dict=feed_dict)
+                result_temp = np.ndarray((end_idx-start_idx, num_features), dtype=np.float32)
+                result_temp[~switch_batch,:] = result_A
+                result_temp[switch_batch,:] = result_B
+                result[start_idx:end_idx] = result_temp
+            elif np.all(switch_batch):
+                result_B = self.sess.run(self.outputs_B, feed_dict=feed_dict)
+                result[start_idx:end_idx] = result_B
+            else:
+                result_A = self.sess.run(self.outputs_A, feed_dict=feed_dict)
+                result[start_idx:end_idx] = result_A               
         if verbose:
             print('')
         return result

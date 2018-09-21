@@ -131,24 +131,24 @@ def save_model(sess, saver, model_dir, global_step):
             print('Saving metagraph...')
             saver.export_meta_graph(metagraph_path)
 
-def restore_model(sess, var_list, model_dir, restore_scopes=None, replace=None):
+def restore_model(sess, var_list, model_dir, restore_scopes=None, replace_rules=None):
     ''' Load the variable values from a checkpoint file into pre-defined graph.
     Filter the variables so that they contain at least one of the given keywords.'''
     with sess.graph.as_default():
         if restore_scopes is not None:
             var_list = [var for var in var_list if any([scope in var.name for scope in restore_scopes])]
-        if replace is not None:
+        if replace_rules is not None:
             var_dict = {}
             for var in var_list:
                 name_new = var.name
-                for k,v in replace.items(): name_new=name_new.replace(k,v)
+                for k,v in replace_rules.items(): name_new=name_new.replace(k,v)
                 name_new = name_new[:-2] # When using dict, numbers should be removed
                 var_dict[name_new] = var
             var_list = var_dict
         model_dir = os.path.expanduser(model_dir)
         ckpt_file = tf.train.latest_checkpoint(model_dir)
 
-        print('Restoring variables from %s ...' % ckpt_file)
+        print('Restoring {} variables from {} ...'.format(len(var_list), ckpt_file))
         saver = tf.train.Saver(var_list)
         saver.restore(sess, ckpt_file)
 
@@ -198,7 +198,7 @@ def euclidean_distance(X, Y, sqrt=False):
             diffs = tf.sqrt(diffs)
     return diffs
 
-def cosine_softmax(prelogits, label, num_classes, weight_decay, gamma=16.0, reuse=None):
+def cosine_softmax(prelogits, label, num_classes, weight_decay, scale=16.0, reuse=None):
     ''' Tensorflow implementation of L2-Sofmax, proposed in:
         R. Ranjan, C. D. Castillo, and R. Chellappa. L2 constrained softmax loss for 
         discriminativeface veriﬁcation. arXiv:1703.09507, 2017. 
@@ -212,7 +212,7 @@ def cosine_softmax(prelogits, label, num_classes, weight_decay, gamma=16.0, reus
                 initializer=slim.xavier_initializer(),
                 # initializer=tf.truncated_normal_initializer(stddev=0.1),
                 dtype=tf.float32)
-        alpha = tf.get_variable('alpha', shape=(),
+        _scale = tf.get_variable('scale', shape=(),
                 regularizer=slim.l2_regularizer(1e-2),
                 initializer=tf.constant_initializer(1.00),
                 trainable=True,
@@ -221,13 +221,13 @@ def cosine_softmax(prelogits, label, num_classes, weight_decay, gamma=16.0, reus
         weights_normed = tf.nn.l2_normalize(weights, dim=0)
         prelogits_normed = tf.nn.l2_normalize(prelogits, dim=1)
 
-        if gamma == 'auto':
-            gamma = tf.nn.softplus(alpha)
+        if scale == 'auto':
+            scale = tf.nn.softplus(_scale)
         else:
-            assert type(gamma) == float
-            gamma = tf.constant(gamma)
+            assert type(scale) == float
+            scale = tf.constant(scale)
 
-        logits = gamma * tf.matmul(prelogits_normed, weights_normed)
+        logits = scale * tf.matmul(prelogits_normed, weights_normed)
 
 
     cross_entropy =  tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(\
@@ -300,7 +300,7 @@ def angular_softmax(prelogits, label, num_classes, global_step, weight_decay,
 
 
 def am_softmax(prelogits, label, num_classes, 
-                global_step, weight_decay, gamma=16.0, m=1.0, reuse=None):
+                weight_decay, scale='auto', m=1.0, reuse=None):
     ''' Tensorflow implementation of AM-Sofmax, proposed in:
         F. Wang, W. Liu, H. Liu, and J. Cheng. Additive margin softmax for face veriﬁcation. arXiv:1801.05599, 2018.
     '''
@@ -314,7 +314,7 @@ def am_softmax(prelogits, label, num_classes,
                 # initializer=tf.constant_initializer(0),
                 trainable=True,
                 dtype=tf.float32)
-        alpha = tf.get_variable('alpha', shape=(),
+        _scale = tf.get_variable('scale', shape=(),
                 regularizer=slim.l2_regularizer(1e-2),
                 initializer=tf.constant_initializer(1.00),
                 trainable=True,
@@ -340,20 +340,20 @@ def am_softmax(prelogits, label, num_classes,
         logits_pos = logits_pos_glob
         logits_neg = logits_neg_glob
 
-        if gamma == 'auto':
-            # Automatic learned gamma
-            gamma = tf.log(tf.exp(1.0) + tf.exp(alpha))
+        if scale == 'auto':
+            # Automatic learned scale
+            scale = tf.log(tf.exp(0.0) + tf.exp(_scale))
         else:
-            # Assigned gamma value
-            assert type(gamma) == float
-            gamma = tf.constant(gamma)
+            # Assigned scale value
+            assert type(scale) == float
+            scale = tf.constant(scale)
 
         # Losses
         _logits_pos = tf.reshape(logits_pos, [batch_size, -1])
         _logits_neg = tf.reshape(logits_neg, [batch_size, -1])
 
-        _logits_pos = _logits_pos * gamma
-        _logits_neg = _logits_neg * gamma
+        _logits_pos = _logits_pos * scale
+        _logits_neg = _logits_neg * scale
         _logits_neg = tf.reduce_logsumexp(_logits_neg, axis=1)[:,None]
 
         loss_ = tf.nn.relu(m + _logits_neg - _logits_pos)
@@ -362,9 +362,80 @@ def am_softmax(prelogits, label, num_classes,
 
     return loss
 
+def diam_softmax(prelogits, label, num_classes,
+                    scale='auto', m=1.0, alpha=0.5, reuse=None):
+    ''' Implementation of DIAM-Softmax, AM-Softmax with Dynamic Weight Imprinting (DWI), proposed in:
+            Y. Shi and A. K. Jain. DocFace+: ID Document to Selfie Matching. arXiv:1809.05620, 2018.
+        The weights in the DIAM-Softmax are dynamically updated using the mean features of training samples.
+    '''
+    num_features = prelogits.shape[1].value
+    batch_size = tf.shape(prelogits)[0]
+    with tf.variable_scope('AM-Softmax', reuse=reuse):
+        weights = tf.get_variable('weights', shape=(num_classes, num_features),
+                initializer=slim.xavier_initializer(),
+                trainable=False,
+                dtype=tf.float32)
+        _scale = tf.get_variable('_scale', shape=(),
+                regularizer=slim.l2_regularizer(1e-2),
+                initializer=tf.constant_initializer(0.0),
+                trainable=True,
+                dtype=tf.float32)
 
-def pair_loss(prelogits, label, num_classes, 
-                global_step, weight_decay, gamma=16.0, m=1.0, reuse=None):
+        # Normalizing the vecotors
+        prelogits_normed = tf.nn.l2_normalize(prelogits, dim=1)
+        weights_normed = tf.nn.l2_normalize(weights, dim=1)
+
+        # Label and logits between batch and examplars
+        label_mat_glob = tf.one_hot(label, num_classes, dtype=tf.float32)
+        label_mask_pos_glob = tf.cast(label_mat_glob, tf.bool)
+        label_mask_neg_glob = tf.logical_not(label_mask_pos_glob)
+
+        logits_glob = tf.matmul(prelogits_normed, tf.transpose(weights_normed))
+        # logits_glob = -0.5 * euclidean_distance(prelogits_normed, tf.transpose(weights_normed))
+        logits_pos_glob = tf.boolean_mask(logits_glob, label_mask_pos_glob)
+        logits_neg_glob = tf.boolean_mask(logits_glob, label_mask_neg_glob)
+
+        logits_pos = logits_pos_glob
+        logits_neg = logits_neg_glob
+
+        if scale == 'auto':
+            # Automatic learned scale
+            scale = tf.log(tf.exp(0.0) + tf.exp(_scale))
+        else:
+            # Assigned scale value
+            assert type(scale) == float
+
+        # Losses
+        _logits_pos = tf.reshape(logits_pos, [batch_size, -1])
+        _logits_neg = tf.reshape(logits_neg, [batch_size, -1])
+
+        _logits_pos = _logits_pos * scale
+        _logits_neg = _logits_neg * scale
+        _logits_neg = tf.reduce_logsumexp(_logits_neg, axis=1)[:,None]
+
+        loss_ = tf.nn.relu(m + _logits_neg - _logits_pos)
+        loss = tf.reduce_mean(loss_, name='diam_softmax')
+
+        # Dynamic weight imprinting
+        # We follow the CenterLoss to update the weights, which is equivalent to
+        # imprinting the mean features
+        weights_batch = tf.gather(weights, label)
+        diff_weights = weights_batch - prelogits_normed
+        unique_label, unique_idx, unique_count = tf.unique_with_counts(label)
+        appear_times = tf.gather(unique_count, unique_idx)
+        appear_times = tf.reshape(appear_times, [-1, 1])
+        diff_weights = diff_weights / tf.cast(appear_times, tf.float32)
+        diff_weights = alpha * diff_weights
+        weights_update_op = tf.scatter_sub(weights, label, diff_weights)
+        with tf.control_dependencies([weights_update_op]):
+            weights_update_op = tf.assign(weights, tf.nn.l2_normalize(weights,dim=1))
+        tf.add_to_collection(tf.GraphKeys.UPDATE_OPS, weights_update_op)
+        
+        return loss
+
+
+
+def pair_loss(prelogits, label, num_classes, m=1.0, reuse=None):
     ''' Max-margin Pair Score (MPS) loss function proposed in:
         Y. Shi and A. K. Jain. DocFace: Matching ID Document Photos to Selfies. arXiv:1703.08388, 2017.
     '''
@@ -379,8 +450,8 @@ def pair_loss(prelogits, label, num_classes,
         prelogits_tmp = prelogits_reshape[:,0,:]
         prelogits_pro = prelogits_reshape[:,1,:]
     
-        # dist_mat_batch = euclidean_distance(prelogits_tmp, tf.transpose(prelogits_pro), True)
-        dist_mat_batch = tf.matmul(prelogits_tmp, tf.transpose(prelogits_pro))
+        dist_mat_batch = -0.5 * euclidean_distance(prelogits_tmp, tf.transpose(prelogits_pro), True)
+        # dist_mat_batch = tf.matmul(prelogits_tmp, tf.transpose(prelogits_pro))
         
         logits_mat_batch = dist_mat_batch
 
@@ -399,12 +470,6 @@ def pair_loss(prelogits, label, num_classes,
         dist_pos = dist_pos_batch
         dist_neg = dist_neg_batch
 
-
-        if gamma == 'auto':
-            gamma = tf.log(tf.exp(1.0) + tf.exp(alpha))
-        else:
-            assert type(gamma) == float
-            gamma = tf.constant(gamma)
 
         # Losses
 
@@ -426,8 +491,8 @@ def pair_loss(prelogits, label, num_classes,
 
 
 
-def pair_loss_sibling(prelogits_tmp, prelogits_pro, label_tmp, label_pro, num_classes, 
-                global_step, weight_decay, gamma=16.0, m=1.0, reuse=None):
+def pair_loss_sibling(prelogits_tmp, prelogits_pro, label_tmp, label_pro, 
+                    num_classes, m=1.0, reuse=None):
     ''' Max-margin Pair Score (MPS) loss function proposed in:
         Y. Shi and A. K. Jain. DocFace: Matching ID Document Photos to Selfies. arXiv:1703.08388, 2017.
     '''
@@ -438,8 +503,9 @@ def pair_loss_sibling(prelogits_tmp, prelogits_pro, label_tmp, label_pro, num_cl
         # Normalizing the vecotors
         prelogits_tmp = tf.nn.l2_normalize(prelogits_tmp, dim=1)
         prelogits_pro = tf.nn.l2_normalize(prelogits_pro, dim=1)
-    
-        dist_mat_batch = tf.matmul(prelogits_tmp, tf.transpose(prelogits_pro))
+
+        dist_mat_batch = -0.5 * euclidean_distance(prelogits_tmp, tf.transpose(prelogits_pro), True)   
+        # dist_mat_batch = tf.matmul(prelogits_tmp, tf.transpose(prelogits_pro))
         
         logits_mat_batch = dist_mat_batch
 

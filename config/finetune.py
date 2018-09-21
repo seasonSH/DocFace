@@ -57,10 +57,10 @@ num_gpus = 1
 use_sibling = True
 
 # The network architecture
-network = "nets/face_resnet.py"
+network = "nets/sibling_shared_res.py"
 
 # Model version, only for some networks
-model_version = None
+model_version = 'fc'
 
 # Number of dimensions in the embedding space
 embedding_size = 512
@@ -72,13 +72,17 @@ embedding_size = 512
 optimizer = "MOM"
 
 # Number of samples per batch
-batch_size = 256
+batch_size = 248
+
+# Structure of batch, use one of following:
+# random_sample, random_pair, random_AB_pair
+batch_format = 'random_AB_pair'
 
 # Number of batches per epoch
 epoch_size = 100
 
 # Number of epochs
-num_epochs = 8
+num_epochs = 20
 
 # learning rate strategy
 learning_rate_strategy = 'step'
@@ -87,7 +91,7 @@ learning_rate_strategy = 'step'
 lr = 0.01
 learning_rate_schedule = {
     0:      1 * lr,
-    500:    0.1 * lr,
+    1600:    0.1 * lr,
 }
 
 # Multiply the learning rate for variables that contain certain keywords
@@ -99,6 +103,10 @@ restore_model = '/path/to/the/pretrained/model/folder'
 
 # Keywords to filter restore variables, set None for all
 restore_scopes = ['FaceResNet']
+
+# For sibling networks, scope names needs to be replaced 
+# to restore from base networks. Set true if so.
+replace_scopes = True
 
 # Weight decay for model variables
 weight_decay = 5e-4
@@ -113,12 +121,10 @@ keep_prob = 1.0
 # Loss functions and their parameters
 losses = {
     # 'softmax': {},
-    # 'cosine': {'gamma': 'auto'},
+    # 'cosine': {'scale': 'auto'},
     # 'angular': {'m': 4, 'lamb_min':5.0, 'lamb_max':1500.0},
-    # 'am': {'gamma': 'auto', 'm': 10.0}
-    'pair': {'gamma': 'auto', 'm': 0.5},
+    # 'am': {'scale': 'auto', 'm': 5.0}
+    'diam': {'scale': 'auto', 'm': 5.0, 'alpha':1.0}
+    # 'pair': {'m': 0.5},
 }
 
-# Build batches with by concatenating pairs from different classes
-# Set true only if you are using Max-margin Pair poss function.
-use_pair_batch = True

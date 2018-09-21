@@ -34,7 +34,6 @@ from basenet import BaseNetwork
 from sibling_net import SiblingNetwork
 import utils
 import tflib
-from lfw import LFWTest
 
 
 def main(args):
@@ -45,11 +44,12 @@ def main(args):
     with open(args.image_list) as f:
         paths = [line.strip() for line in f]
     print('%d images to load.' % len(paths))
+    assert(len(paths)>0)
     
 
     # Pre-process the images
     images = utils.preprocess(paths, config, False)
-    assert(len(paths)>0)
+    switch = np.array(utils.is_typeB(p) for p in paths)
 
 
     # Load model files and config file
@@ -62,9 +62,6 @@ def main(args):
 
     # Run forward pass to calculate embeddings
     if config.use_sibling:
-        print("\033[93mWARNING:\033[0m When using sibling network: we assume the images are in the order template, probe, template, probe, ...!")
-        assert len(images) % 2 == 0, "The number of images are assumed to be even for using sibling network!"
-        switch = utils.zero_one_switch(len(images))
         embeddings = network.extract_feature(images, switch, args.batch_size, verbose=True)
     else:
         embeddings = network.extract_feature(images, args.batch_size, verbose=True)
