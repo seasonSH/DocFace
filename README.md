@@ -18,7 +18,7 @@ By Yichun Shi and Anil K. Jain
 
 ## Introduction
 
-This repository includes the TensorFlow implementation of [**DocFace**](https://arxiv.org/abs/1805.02283) and [**DocFace+**](https://arxiv.org/abs/1809.05620), which is a system proposed for matching ID photos and live face photos. DocFace is shown to significantly outperform general face matchers on the ID-Selfie matching problem. We here give the example training code and pre-trained models in the paper. For the preprocessing part, we follow the repository of [SphereFace](http://openaccess.thecvf.com/content_cvpr_2017/papers/Liu_SphereFace_Deep_Hypersphere_CVPR_2017_paper.pdf) to align the face images using [MTCNN](https://github.com/kpzhang93/MTCNN_face_detection_alignment). The user can also use other methods for face alignment. Because the dataset used in the paper is private, we cannot publish it here. One can test the system on their own dataset.
+This repository includes the TensorFlow implementation of [**DocFace**](https://arxiv.org/abs/1805.02283) and [**DocFace+**](https://arxiv.org/abs/1809.05620), which is a system proposed for matching ID photos and live face photos. DocFace is shown to significantly outperform general face matchers on the ID-Selfie matching problem. We here give the example training code and pre-trained models in the paper. For the preprocessing part, we follow the repository of [SphereFace](https://github.com/wy1iu/sphereface) to align the face images using [MTCNN](https://github.com/kpzhang93/MTCNN_face_detection_alignment). The user can also use other methods for face alignment. Because the dataset used in the paper is private, we cannot publish it here. One can test the system on their own dataset.
 
 
 ## Citation
@@ -149,11 +149,11 @@ python src/extract_features.py \
 --output /path/to/output.npy
 ```
 
-Notice that the images in the image list follow the same naming convention of the training dataset. That is, ID images should start with "A\*\*" and selfie images should start with "B\*\*". An example imagelist.txt is given in the repo.
+Notice that the images in the image list follow the same naming convention of the training dataset. That is, ID images should start with "A\*\*" and selfie images should start with "B\*\*". 
 
 ## Models
 
-- BaseModel (unconstraind face matching): [Google Drive](https://drive.google.com/file/d/1YIZXsvtxQ4HkwGUDqq3bSwZVIv9e338R/view?usp=sharing) | [Baidu Yun](https://pan.baidu.com/s/16IbYbnNkk1YsEnlcrpadVA)
+- BaseModel (unconstraind face matching): [Google Drive](https://drive.google.com/open?id=1nBmggq4uixcI2AtucGu5nsa28dJRwkIz) | [Baidu Yun](https://pan.baidu.com/s/1RadsPNjcdzBDYcdoN5BAhQ)
 
 - Fine-tuned DocFace model: (contact the author)
 
