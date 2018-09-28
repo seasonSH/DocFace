@@ -5,6 +5,7 @@ By Yichun Shi and Anil K. Jain
 <img src="https://raw.githubusercontent.com/seasonSH/DocFace/master/figs/docface.png" width="600px">
 
 ## Update Notes
++ 09/28/2018: Added a demo code for face alignment.
 + 09/20/2018: The content of DocFace+ is added, including DIAM-Softmax, partially shared sibling networks and support for multiple ID/selfie per class.
 
 ## Contents
@@ -41,6 +42,7 @@ This repository includes the TensorFlow implementation of [**DocFace**](https://
 1. Requirements for `Python3`
 2. Requirements for `Tensorflow r1.2` or newer versions.
 3. Run `pip install -r requirements.txt` for other dependencies.
+4. Requirements for `Matlab 2014b` and `Caffe` for MTCNN face alignment.
 
 ## Usage
 
@@ -73,7 +75,23 @@ For the ID-Selfie dataset, make sure all the foldesr in such a structure, where 
     ...
 
 #### 1.2 Face Alignment
-We align all the face images following the [SphereFace](http://openaccess.thecvf.com/content_cvpr_2017/papers/Liu_SphereFace_Deep_Hypersphere_CVPR_2017_paper.pdf). The user is recommended to use their code for face alignment. It is okay to use other face alignment methods, but make sure all the images are resized to 96 x 112. Users can also use an input size of 112 x 112 by changing the "image_size" in the configuration files.
+To ensure the peroformance, we align all the face images using the original MATLAB version of MTCNN following [SphereFace](http://openaccess.thecvf.com/content_cvpr_2017/papers/Liu_SphereFace_Deep_Hypersphere_CVPR_2017_paper.pdf). Here, we provide a simpler code to align a given dataset folder. To use the code, you need to install [Caffe](http://caffe.berkeleyvision.org/installation.html) for Matlab, and clone the repo of [MTCNN](https://github.com/kpzhang93/MTCNN_face_detection_alignment) and [Pdolloar](https://github.com/pdollar/toolbox). Then fill in their paths in the following lines in `align/face_detect_align.m`:
+
+```Matlab
+imglist = importdata('/path/to/input/imagelist.txt');
+output_dir = '/path/to/output/dataset';
+...
+matCaffe       = '/path/to/caffe/matlab/';
+pdollarToolbox = '/path/to/toolbox';
+MTCNN          = '/path/to/mtcnn/code/codes/MTCNNv1';
+...
+modelPath = '/path/to/mtcnn/code/codes/MTCNNv1/model';
+```
+Run the following command in Matlab for face alignement:
+```
+run align/face_detect_align.m
+```
+
 
 ### Part 2: Training
 **Note:** In this part, we assume you are in the directory **`$DOCFACE_ROOT/`**
@@ -180,3 +198,4 @@ Notice that the images in the image list follow the same naming convention of th
 ## Contact
 
   Yichun Shi: shiyichu **at** msu **dot** edu
+
