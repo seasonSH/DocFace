@@ -103,9 +103,11 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# Test files
 log/*
 pretrained/*
 nets/sphere_net.py
 config/basemodel_test.py
 config/finetune_test.py
 src/finetune_base.py
+src/test.py

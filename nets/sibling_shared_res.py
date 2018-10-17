@@ -46,17 +46,14 @@ batch_norm_params_last = {
 
 def parametric_relu(x):
     num_channels = x.shape[-1].value
-    with tf.variable_scope('PRELU'):
-        alpha = tf.get_variable('alpha', (1,1,1,num_channels),
+    with tf.variable_scope('p_re_lu'):
+        alpha = tf.get_variable('alpha', (1,1,num_channels),
                         initializer=tf.constant_initializer(0.0),
                         dtype=tf.float32)
-        # mask = x>=0
-        # mask_pos = tf.cast(mask, tf.float32)
-        # mask_neg = tf.cast(tf.logical_not(mask), tf.float32)
-        return tf.nn.relu(x) + alpha * tf.maximum(0.0, x)
+        return tf.nn.relu(x) + alpha * tf.minimum(0.0, x)
 
-activation = lambda x: tf.keras.layers.PReLU(shared_axes=[1,2]).apply(x)
-# activation = parametric_relu
+# activation = lambda x: tf.keras.layers.PReLU(shared_axes=[1,2]).apply(x)
+activation = parametric_relu
 
 def se_module(input_net, ratio=16, reuse = None, scope = None):
     with tf.variable_scope(scope, 'SE', [input_net], reuse=reuse):
