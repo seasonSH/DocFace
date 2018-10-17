@@ -180,6 +180,8 @@ class Dataset():
             
             self.is_typeB[c.indices_B] = True
 
+        print('type A images: %d   type B images: %d'%(np.sum(~self.is_typeB), np.sum(self.is_typeB)))
+
 
     # Data Loading
     def init_index_queue(self):

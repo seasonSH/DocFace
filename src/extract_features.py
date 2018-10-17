@@ -50,6 +50,7 @@ def main(args):
     # Pre-process the images
     images = utils.preprocess(paths, config, False)
     switch = np.array([utils.is_typeB(p) for p in paths])
+    print('%d type A images and %d type B images.' % (np.sum(switch), np.sum(~switch)))
 
 
     # Load model files and config file
